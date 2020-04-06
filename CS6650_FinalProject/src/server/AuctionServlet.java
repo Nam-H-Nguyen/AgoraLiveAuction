@@ -61,6 +61,12 @@ public class AuctionServlet {
                 }
             }
 
+            System.out.println("Listening to port " + port);
+            System.out.println("Other servers are");
+            for (Node node: nodes) {
+                System.out.println("\t" + node);
+            }
+
             IAuctionServer auction = null;
             System.out.println("Choose an option");
             System.out.println("n - New server from scratch");

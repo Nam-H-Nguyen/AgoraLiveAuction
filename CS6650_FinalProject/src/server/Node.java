@@ -10,4 +10,8 @@ public class Node implements Serializable {
         this.host = host;
         this.port = port;
     }
+
+    public String toString() {
+        return host + ":" + port;
+    }
 }
