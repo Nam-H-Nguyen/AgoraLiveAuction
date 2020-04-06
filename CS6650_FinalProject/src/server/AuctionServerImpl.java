@@ -13,7 +13,7 @@ import java.util.logging.Logger;
 public class AuctionServerImpl extends UnicastRemoteObject implements IAuctionServer {
     static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(AuctionServerImpl.class.getName());
-
+    private List<Node> nodes = null;
 
     private class LifecycleAuctionItemTask extends TimerTask implements Serializable {
         static final long serialVersionUID = 1L;
@@ -80,6 +80,15 @@ public class AuctionServerImpl extends UnicastRemoteObject implements IAuctionSe
         timer = new Timer();
         timerTasks = new HashMap<>();
         LOGGER.setLevel(Level.OFF);
+        nodes = new ArrayList<>();
+    }
+
+    public void addNode(String host, int port) {
+        nodes.add(new Node(host, port));
+    }
+
+    public void addNodes(List<Node> nodes) {
+        this.nodes = nodes;
     }
 
     /**

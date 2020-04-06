@@ -3,6 +3,8 @@ package server;
 import java.io.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -11,6 +13,7 @@ public class AuctionServlet {
     private Timer timer = new Timer();
     private static final String DEFAULT_FILENAME = "auction.srv";
     private static final long SAVE_DELAY = 1000 * 60 * 5;
+
 
     public class SaveTask extends TimerTask {
         private IAuctionServer auction;
@@ -25,25 +28,39 @@ public class AuctionServlet {
         }
     }
 
-
     public static void main(String args[]) {
         AuctionServlet servlet = new AuctionServlet();
-
-        String host = "localhost";
-        int port = 1099;
-
-        if (args.length == 1) {
-            port = Integer.parseInt(args[0]);
-        } else if (args.length == 2) {
-            host = args[0];
-            port = Integer.parseInt(args[1]);
-        }
-
+        List<Node> nodes = new ArrayList<>();
         //System.setProperty("java.security.policy", "file:///home/justas/Uni/DAS/Auction/out/production/RMIAuction/server/policyf.txt");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        BufferedReader brNodesFile = null;
+        try {
+            System.out.println();
+            brNodesFile = new BufferedReader(new FileReader(AuctionServlet.class.getResource("nodes.txt").getFile()));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
         String fileName = "";
 
+        String host = null;
+        int port = -1;
+
         try {
+            System.out.println("Enter this server's ID (From 0 to 4. Reading details from nodes.txt): ");
+            String serverID = br.readLine();
+            String nodeLine = null;
+
+            while ((nodeLine = brNodesFile.readLine()) != null) {
+                String[] fields = nodeLine.split(" ");
+                if (fields[0].equals(serverID)) {
+                    host = fields[1];
+                    port = Integer.parseInt(fields[2]);
+                } else {
+                    nodes.add(new Node(fields[1], Integer.parseInt(fields[2])));
+                }
+            }
+
             IAuctionServer auction = null;
             System.out.println("Choose an option");
             System.out.println("n - New server from scratch");
@@ -59,6 +76,7 @@ public class AuctionServlet {
                             fileName = DEFAULT_FILENAME;
                         }
                         auction = new AuctionServerImpl();
+                        ((AuctionServerImpl)auction).addNodes(nodes);
                         loop = false;
                         break;
                     case "l":
