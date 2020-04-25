@@ -1,6 +1,6 @@
 package server;
 
-import client.IAuctionClient;
+import client.AuctionClient;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;
@@ -10,44 +10,30 @@ import java.util.*;
 public class AuctionItem implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private static int idCounter = 0;
-    private int id;
+    private static int itemIDCounter = 0;
+    private int itemID;
 
-    private IAuctionClient owner;
+    private AuctionClient owner;
     private LinkedList<Bid> bids;
 
-    private Set<IAuctionClient> observers;
+    private Set<AuctionClient> bidOservers;
     private String name;
     private final float minBid;
     private final Date startDate, closingDate;
 
-    public AuctionItem(IAuctionClient owner, String name, float minBid, long closingTime) {
+    public AuctionItem(AuctionClient owner, String name, float minBid, long endTime) {
         this.owner = owner;
         this.startDate = new Date(System.currentTimeMillis());
-        this.closingDate = new Date(System.currentTimeMillis() + 1000 * closingTime);
+        this.closingDate = new Date(System.currentTimeMillis() + 1000 * endTime);
         synchronized(this) {
-            this.id = idCounter;
-            idCounter += 1;
+            this.itemID = itemIDCounter;
+            itemIDCounter += 1;
         }
         this.name = name;
         this.bids = new LinkedList<>();
-        this.observers = new HashSet<>();
-        this.observers.add(owner);
+        this.bidOservers = new HashSet<>();
+        this.bidOservers.add(owner);
         this.minBid = minBid;
-    }
-
-    /**
-     * Notifies all bidders and the owner with a message
-     * @param message
-     */
-    public void notifyObservers(String message) {
-        for (IAuctionClient client : observers) {
-            try {
-                client.callback(message);
-            } catch (RemoteException e) {
-                System.err.println("Unable to access client - " + e);
-            }
-        }
     }
 
     /**
@@ -69,9 +55,9 @@ public class AuctionItem implements Serializable {
             }
         }
         bids.push(b);
-        observers.add(b.getOwner());
+        bidOservers.add(b.getOwner());
         // Notify clients about the new bid
-        for (IAuctionClient client : observers) {
+        for (AuctionClient client : bidOservers) {
             try {
                 if (client == b.getOwner()) {
                     client.callback("You're the max bidder with " + b.getAmount());
@@ -85,6 +71,22 @@ public class AuctionItem implements Serializable {
         return ErrorCodes.SUCCESS_BID.MESSAGE;
     }
 
+    /**
+     * Notifies all bidders and the owner with a message
+     * @param message
+     */
+    public void notifyObservers(String message) {
+        for (AuctionClient client : bidOservers) {
+            try {
+                client.callback(message);
+            } catch (RemoteException e) {
+                System.err.println("Unable to access client - " + e);
+            }
+        }
+    }
+
+
+
     public synchronized Bid getCurrentBid() {
         if (bids.size() > 0) {
             return bids.peek();
@@ -92,11 +94,11 @@ public class AuctionItem implements Serializable {
         return null;
     }
 
-    public int getId() {
-        return id;
+    public int getItemID() {
+        return itemID;
     }
 
-    public IAuctionClient getOwner() {
+    public AuctionClient getOwner() {
         return owner;
     }
 
@@ -116,7 +118,7 @@ public class AuctionItem implements Serializable {
         return minBid;
     }
 
-    public Set<IAuctionClient> getObservers() { return observers; }
+    public Set<AuctionClient> getBidOservers() { return bidOservers; }
 
     public Date getStartDate() { return startDate; }
 
@@ -143,17 +145,18 @@ public class AuctionItem implements Serializable {
             long timeDiff = closingDate.getTime() - System.currentTimeMillis();
             boolean hasEnded = timeDiff <= 0;
             String timeLeftStr = "";
+            int minutes = 60 * 1000;
             if (!hasEnded) {
-                if (timeDiff < 60 * 1000) {
+                if (timeDiff < minutes) {
                     timeLeftStr = String.valueOf(timeDiff / 1000) + "s";
-                } else if (timeDiff >= 60 * 1000 && timeDiff < 60 * 60 * 1000) {
+                } else if (timeDiff >= minutes && timeDiff < 60 * minutes) {
                     timeLeftStr = String.valueOf(timeDiff / 1000 / 60) + "min " + (timeDiff / 1000) % 60 + "s";
-                } else if (timeDiff >= 60 * 60 * 1000) {
+                } else if (timeDiff >= 60 * minutes) {
                     timeLeftStr = String.valueOf(timeDiff / 1000 / 60 / 60) + "h " + (timeDiff / 1000 / 60) % 60 + "min";
                 }
             }
-            StringBuilder result = new StringBuilder("Auction Item #");
-            result.append(id).append(": ").append(name).append("\n");
+            StringBuilder result = new StringBuilder("Auction Item # ");
+            result.append(itemID).append(": ").append(name).append("\n");
             result.append("Minimum bid: ").append(minBid).append("\n");
             if (hasEnded && getCurrentBid() != null) {
                 result.append("Winning bid: ").append(currentBid)
@@ -162,7 +165,7 @@ public class AuctionItem implements Serializable {
                 result.append("Current bid: ").append(currentBid == null ? "none" : currentBid).append("\n");
             }
             result.append("Start date: ").append(dF.format(startDate)).append("\n");
-            result.append("Closing date: ").append(dF.format(closingDate)).append("\n");
+            result.append("End date: ").append(dF.format(closingDate)).append("\n");
             if (!hasEnded) {
                 result.append("Time left: ").append(timeLeftStr);
             }
