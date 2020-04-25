@@ -1,12 +1,12 @@
 package server;
 
-import client.IAuctionClient;
+import client.AuctionClient;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 
-public interface IAuctionServer extends Remote {
+public interface AuctionServer extends Remote {
     /**
      * Create an auction item
      * @param owner client object
@@ -16,7 +16,7 @@ public interface IAuctionServer extends Remote {
      * @return success/error message
      * @throws RemoteException
      */
-    String createAuctionItem(IAuctionClient owner, String name, float minVal, long closingTime) throws RemoteException;
+    String createAuctionItem(AuctionClient owner, String name, float minVal, long closingTime) throws RemoteException;
 
     /**
      * Make a bid
@@ -26,7 +26,7 @@ public interface IAuctionServer extends Remote {
      * @return success/error message
      * @throws RemoteException
      */
-    String bid(IAuctionClient owner, int auctionItemId, float amount) throws RemoteException;
+    String bid(AuctionClient owner, int auctionItemId, float amount) throws RemoteException;
 
     /**
      * Returns a nicely formatted string that contains a list of open auctions
