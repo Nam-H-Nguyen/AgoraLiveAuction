@@ -3,7 +3,7 @@ package client;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-public interface IAuctionClient extends Remote {
+public interface AuctionClient extends Remote {
     /**
      * Gets client name
      * @return client name

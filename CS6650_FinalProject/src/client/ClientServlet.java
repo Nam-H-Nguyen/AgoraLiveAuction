@@ -18,16 +18,16 @@ public class ClientServlet {
             port = Integer.parseInt(args[1]);
         }
 
-        String connectionStr = "rmi://"+host+":"+port+"/auction";
+        String connStr = "rmi://"+host+":"+port+"/auction";
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
         try {
-            ConnectionLayer connection = new ConnectionLayer(connectionStr);
+            ConnectLayer conn = new ConnectLayer(connStr);
             
-            System.out.print("What is your username? ");
+            System.out.println("What is your name? ");
             AuctionClientImpl client = new AuctionClientImpl(br.readLine());
-            System.out.println("Choose an option");
-            System.out.println("l - List items");
+            System.out.println("Choose from the following option: ");
+            System.out.println("l - List auction items");
             System.out.println("n - New listing");
             System.out.println("b - Bid");
             System.out.println("h - History");
@@ -36,42 +36,42 @@ public class ClientServlet {
 
             boolean end = false;
             while (!end) {
-                String response = "";
+                String responseMsg = "";
                 try {
                     switch (br.readLine().toLowerCase()) {
                         case "l":
-                            response = connection.getServer().getOpenAuctions();
+                            responseMsg = conn.getServer().getOpenAuctions();
                             break;
                         case "n":
                             try {
-                                System.out.print("Item name: ");
+                                System.out.println("Item name: ");
                                 String name = br.readLine();
                                 if (name.equals("")) throw new NumberFormatException();
-                                System.out.print("Starting price: ");
+                                System.out.println("Starting price: ");
                                 float startPrice = Float.valueOf(br.readLine());
-                                System.out.print("End auction in x seconds: ");
+                                System.out.println("End auction in ? seconds: ");
                                 long endTime = Long.valueOf(br.readLine());
-                                response = connection.getServer().createAuctionItem(client, name, startPrice, endTime);
+                                responseMsg = conn.getServer().createAuctionItem(client, name, startPrice, endTime);
                             } catch (NumberFormatException nfe) {
                                 System.err.println("Incorrect input format. Please try again.");
                             }
                             break;
                         case "b":
                             try {
-                                System.out.print("Auction item ID: ");
+                                System.out.println("Auction Item ID (e.g., 0): ");
                                 int auctionItemId = Integer.valueOf(br.readLine());
-                                System.out.print("Amount: ");
+                                System.out.println("Bid Amount: ");
                                 float bidAmount = Float.valueOf(br.readLine());
-                                response = connection.getServer().bid(client, auctionItemId, bidAmount);
+                                responseMsg = conn.getServer().bid(client, auctionItemId, bidAmount);
                             } catch (NumberFormatException nfe) {
                                 System.err.println("Incorrect input format. Please try again.");
                             }
                             break;
                         case "h":
-                            response = connection.getServer().getClosedAuctions();
+                            responseMsg = conn.getServer().getClosedAuctions();
                             break;
                         case "t":
-                            response = "Average turnaround - " + connection.getFailureDetector().determineLoad() + "ms";
+                            responseMsg = "Average turnaround - " + conn.getFailureDetector().determineLoad() + "ms";
                             break;
                         case "q":
                             end = true;
@@ -82,7 +82,7 @@ public class ClientServlet {
                 } catch (RemoteException e) {
                     System.out.println(e);
                 }
-                System.out.println(response);
+                System.out.println(responseMsg);
             }
             System.exit(0);
         } catch (IOException e) {

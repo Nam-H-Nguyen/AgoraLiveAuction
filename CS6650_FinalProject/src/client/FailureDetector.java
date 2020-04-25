@@ -5,86 +5,59 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class FailureDetector {
-    private final static long DEFAULT_TIMEOUT = 5000, DEFAULT_PERIOD = 5000;
-    private final static int DEFAULT_NO_OF_PROBES = 10000;
+    private final static long TIMEOUT = 5000, INTERVAL = 5000;
+    private final static int NO_OF_PROBES = 10000;
     
-    private ConnectionLayer connection;
+    private ConnectLayer conn;
     private Timer timer = new Timer();
-    private long timeout, period;
+    private long timeout, interval;
 
     private class ProbeTask extends TimerTask {
         @Override
         public void run() {
             try {
-                if (!connection.isConnected()) {
-                    connection.reconnect();
+                if (!conn.connectOK()) {
+                    conn.reconnect();
                 }
-                connection.getServer().probe();
+                conn.getServer().probe();
             } catch (RemoteException e) {
-                System.err.println("Retrying in " + period + "ms");
-                connection.setConnected(false);
+                System.err.println("Retrying in " + interval + "ms");
+                conn.setConnected(false);
             }
         }
     }
 
     /**
-     * Init failure detector with DEFAULT_TIMEOUT and DEFAULT_PERIOD
-     * @param connection
+     * Init failure detector with TIMEOUT and INTERVAL
+     * @param conn
      */
-    public FailureDetector(ConnectionLayer connection) {
-        this(connection, DEFAULT_TIMEOUT, DEFAULT_PERIOD);
+    public FailureDetector(ConnectLayer conn) {
+        this(conn, TIMEOUT, INTERVAL);
     }
     
     /**
-     * Create a failure detector that will send probes every <period> milliseconds
-     * @param connection
-     * @param period how often to probe the server in milliseconds
+     * Create a failure detector that will send probes every <interval> milliseconds
+     * @param conn
+     * @param interval how often to probe the server in milliseconds
      */
-    public FailureDetector(ConnectionLayer connection, long period) {
-        this(connection, DEFAULT_TIMEOUT, period);
+    public FailureDetector(ConnectLayer conn, long interval) {
+        this(conn, TIMEOUT, interval);
     }
     
     /**
-     * Create a failure detector with a specific timeout and period
-     * @param connection
+     * Create a failure detector with a specific timeout and interval
+     * @param conn
      * @param timeout in milliseconds
-     * @param period how often to probe the server in milliseconds
+     * @param interval how often to probe the server in milliseconds
      */
-    public FailureDetector(ConnectionLayer connection, long timeout, long period) {
-        this.connection = connection;
+    public FailureDetector(ConnectLayer conn, long timeout, long interval) {
+        this.conn = conn;
         this.timeout = timeout;
-        this.period = period;
-        this.timer.schedule(new ProbeTask(), 1, period);
+        this.interval = interval;
+        this.timer.schedule(new ProbeTask(), 1, interval);
     }
     
-    /**
-     * Create a failure detector with a number of probes and sensitivity to determine the timeout + the period
-     * @param connection
-     * @param noOfProbes how many probes to send when determining the timeout
-     * @param sensitivity how much a call can deviate from the average
-     * @param period how often to probe the server in milliseconds
-     */
-    public FailureDetector(ConnectionLayer connection, int noOfProbes, long sensitivity, long period) {
-        this.connection = connection;
-        try {
-            this.timeout = determineTimeout(noOfProbes, sensitivity);
-        } catch (RemoteException e) {
-            System.err.println("Unable to contact the server in order to determine timeout. Setting default");
-            this.timeout = DEFAULT_TIMEOUT;
-        }
-        timer.schedule(new ProbeTask(), 0, period);
-    }
-    
-    /**
-     * Calculates the timeout with respect to sensitivity and number of probes
-     * @param sensitivity how much a call can deviate from the average
-     * @param noOfProbes number of probes to send
-     * @return timeout in milliseconds (average turnaround time + sensitivity)
-     * @throws RemoteException
-     */
-    private long determineTimeout(int noOfProbes, long sensitivity) throws RemoteException {
-        return (long)determineLoad(noOfProbes) + sensitivity;
-    }
+
 
     /**
      * Calculates average turnaround with the default number of probes
@@ -92,7 +65,7 @@ public class FailureDetector {
      * @throws RemoteException
      */
     public float determineLoad() throws RemoteException {
-        return determineLoad(DEFAULT_NO_OF_PROBES);
+        return determineLoad(NO_OF_PROBES);
     }
     
     /**
@@ -102,29 +75,12 @@ public class FailureDetector {
      * @throws RemoteException
      */
     public float determineLoad(int noOfProbes) throws RemoteException {
-        connection.getServer().probe();
+        conn.getServer().probe();
         long start = System.currentTimeMillis();
         for (int i = 0; i < noOfProbes; i++) {
-            connection.getServer().probe();
+            conn.getServer().probe();
         }
         float averageTurnaround = Float.valueOf((System.currentTimeMillis() - start)) / noOfProbes;
         return averageTurnaround;
-    }
-    
-    public long getTimeout() {
-        return timeout;
-    }
-
-    public void setTimeout(long timeout) {
-        this.timeout = timeout;
-    }
-
-    public long getPeriod() {
-        return period;
-    }
-
-
-    public void setPeriod(long period) {
-        this.period = period;
     }
 }

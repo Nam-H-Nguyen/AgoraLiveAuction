@@ -1,6 +1,6 @@
 package server;
 
-import client.IAuctionClient;
+import client.AuctionClient;
 
 import java.io.*;
 import java.rmi.RemoteException;
@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class AuctionServerImpl extends UnicastRemoteObject implements IAuctionServer {
+public class AuctionServerImpl extends UnicastRemoteObject implements AuctionServer {
     static final long serialVersionUID = 1L;
     private static final Logger LOGGER = Logger.getLogger(AuctionServerImpl.class.getName());
     private List<Node> nodes = null;
@@ -104,8 +104,8 @@ public class AuctionServerImpl extends UnicastRemoteObject implements IAuctionSe
     }
 
     @Override
-    public String createAuctionItem(IAuctionClient owner, String name, float minVal, long closingTime) throws RemoteException {
-        if (owner == null) return ErrorCodes.OWNER_NULL.MESSAGE;
+    public String createAuctionItem(AuctionClient owner, String name, float minVal, long closingTime) throws RemoteException {
+        if (owner == null) return ErrorCodes.OWNER_EMPTY.MESSAGE;
         LOGGER.info("Client " + owner.getName() + " is trying to create an auction item");
         if (name == null) return ErrorCodes.NAME_NULL.MESSAGE;
         if (name.length() == 0) return ErrorCodes.NAME_EMPTY.MESSAGE;
@@ -113,19 +113,19 @@ public class AuctionServerImpl extends UnicastRemoteObject implements IAuctionSe
         if (closingTime < 0) return ErrorCodes.NEGATIVE_CLOSING_TIME.MESSAGE;
         // Further validation in AuctionItem's constructor
         AuctionItem item = new AuctionItem(owner, name, minVal, closingTime);
-        auctionItems.put(item.getId(), item);
+        auctionItems.put(item.getItemID(), item);
         // Timer for ending the auction
-        LifecycleAuctionItemTask t = new LifecycleAuctionItemTask(item.getId());
+        LifecycleAuctionItemTask t = new LifecycleAuctionItemTask(item.getItemID());
         timer.schedule(t, closingTime * 1000);
         timerTasks.put(t, closingTime * 1000);
 
-        LOGGER.info("Auction ID #" + item.getId() + " - " + item.getName() + " created");
+        LOGGER.info("Auction ID #" + item.getItemID() + " - " + item.getName() + " created");
         return ErrorCodes.ITEM_CREATED.MESSAGE;
     }
 
     @Override
-    public String bid(IAuctionClient owner, int auctionItemId, float amount) throws RemoteException {
-        if (owner == null) return ErrorCodes.OWNER_NULL.MESSAGE;
+    public String bid(AuctionClient owner, int auctionItemId, float amount) throws RemoteException {
+        if (owner == null) return ErrorCodes.OWNER_EMPTY.MESSAGE;
         // Get owner name so we don't have to query multiple times and risk a RemoteException
         String ownerName = owner.getName();
         LOGGER.info("Client " + ownerName + " is trying to bid on item ID #" + auctionItemId);

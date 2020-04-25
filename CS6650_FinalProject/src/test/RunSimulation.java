@@ -1,6 +1,6 @@
 package test;
 
-import client.ConnectionLayer;
+import client.ConnectLayer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,14 +21,14 @@ public class RunSimulation {
             port = Integer.parseInt(args[1]);
         }
 
-        ConnectionLayer connection = new ConnectionLayer("rmi://"+host+":"+port+"/auction", 1000);
+        ConnectLayer connection = new ConnectLayer("rmi://"+host+":"+port+"/auction", 1000);
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
         int noOfWorkers = 0;
         long duration = 0;
         float cumulative = 0;
         try {
-            System.out.println("How many workers would you like to test against?");
+            System.out.println("Number of workers would you like to test against?");
             noOfWorkers = Integer.valueOf(br.readLine());
             System.out.println("And for how long (in seconds, at least " + INTERVAL + ")?");
             duration = Long.valueOf(br.readLine());
@@ -39,17 +39,8 @@ public class RunSimulation {
                 new Thread(cl).start();
             }
 
-            // Output load every 5s
-            for (int i = 0; i < duration / INTERVAL; i++) {
-                Thread.sleep(INTERVAL * 1000);
-                float load = connection.getFailureDetector().determineLoad();
-                cumulative += load;
-                System.out.println("Server load - " + load + "s per request @" + (i + 1) * INTERVAL + "s");
-            }
         } catch (RemoteException e) {
             System.err.println("Unable to determine server load - " + e);
-        } catch (InterruptedException e) {
-            System.err.println("Unable to sleep thread - " + e);
         } catch (IOException e) {
             System.err.println("Unable to parse input " + e);
         }

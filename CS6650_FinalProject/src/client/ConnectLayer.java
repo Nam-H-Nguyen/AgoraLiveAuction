@@ -1,6 +1,6 @@
 package client;
 
-import server.IAuctionServer;
+import server.AuctionServer;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -12,43 +12,43 @@ import java.rmi.RemoteException;
  * It should be assigned using connection.setFailureDetector(new FailureDetector(param1, param2, ...))
  * Having failure detector params in the constructor is a bad idea
  */
-public class ConnectionLayer {
+public class ConnectLayer {
     private FailureDetector failureDetector;
-    private String connectionStr;
+    private String connStr;
 
     private boolean connected = false;
 
-    private IAuctionServer server;
+    private AuctionServer server;
 
     /**
-     * Basic constructor that only requires a connection string
-     * @param connectionStr
+     * Constructor that only requires a connection string
+     * @param connStr
      */
-    public ConnectionLayer(String connectionStr) {
-        this.connectionStr = connectionStr;
+    public ConnectLayer(String connStr) {
+        this.connStr = connStr;
         connect();
         failureDetector = new FailureDetector(this);
     }
 
     /**
      * The period parameter is passed to the FailureDetector, determines how often to retry in case connection breaks
-     * @param connectionStr
+     * @param connStr
      * @param period
      */
-    public ConnectionLayer(String connectionStr, long period) {
-        this.connectionStr = connectionStr;
+    public ConnectLayer(String connStr, long period) {
+        this.connStr = connStr;
         connect();
         failureDetector = new FailureDetector(this, period);
     }
 
     private void connect() {
-        if (!isConnected()) {
+        if (!connectOK()) {
             try {
-                server = (IAuctionServer) Naming.lookup(connectionStr);
+                server = (AuctionServer) Naming.lookup(connStr);
                 // Flag used by the servlet
                 setConnected(true);
             } catch (MalformedURLException e) {
-                System.err.println("Malformed URL - " + e);
+                System.err.println("Malformed URL: " + e);
             } catch (NotBoundException e) {
                 System.err.println("Unable to bind the server - " + e);
             } catch (RemoteException e) {
@@ -56,15 +56,7 @@ public class ConnectionLayer {
             }
         }
     }
-
-    public void reconnect() {
-        connect();
-        if (isConnected()) {
-            System.out.println("Reconnected!");
-        }
-    }
-
-    public synchronized boolean isConnected() {
+    public synchronized boolean connectOK() {
         return connected;
     }
 
@@ -72,19 +64,29 @@ public class ConnectionLayer {
         this.connected = connected;
     }
 
+
+    public void reconnect() {
+        connect();
+        if (connectOK()) {
+            System.out.println("Reconnection succeeds.");
+        }
+    }
+
+
+
     public FailureDetector getFailureDetector() {
         return failureDetector;
     }
 
-    public IAuctionServer getServer() throws RemoteException {
-        if (isConnected()) {
+    public AuctionServer getServer() throws RemoteException {
+        if (connectOK()) {
             return server;
         } else {
             throw new RemoteException("Server is dead.");
         }
     }
 
-    public void setServer(IAuctionServer server) {
+    public void setServer(AuctionServer server) {
         this.server = server;
     }
 }

@@ -11,27 +11,61 @@ import java.util.TimerTask;
 public class AuctionServlet {
 
     private Timer timer = new Timer();
-    private static final String DEFAULT_FILENAME = "auction.srv";
+    private static final String DEFAULT_FILENAME = "auction.txt";
     private static final long SAVE_DELAY = 1000 * 60 * 5;
 
 
     public class SaveTask extends TimerTask {
-        private IAuctionServer auction;
+        private AuctionServer auction;
         private String fileName;
-        SaveTask(IAuctionServer auction, String fileName) {
+        SaveTask(AuctionServer auction, String fileName) {
             this.auction = auction;
             this.fileName = fileName;
         }
         @Override
         public void run() {
-            saveState(auction, fileName);
+            writeStateToFile(auction, fileName);
         }
     }
+
+    public static AuctionServer readStateFromFile(String filename) {
+        Object o = null;
+        try {
+            ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename));
+            o = in.readObject();
+        } catch (IOException e) {
+            System.err.println("Unable to load file: " + e);
+        } catch (ClassNotFoundException e) {
+            System.err.println("Class not found: " + e);
+        }
+        if (o instanceof AuctionServerImpl) {
+            ((AuctionServerImpl)o).reloadTimer();
+        }
+        return (AuctionServer)o;
+    }
+
+    public static void writeStateToFile(AuctionServer auction, String fileName) {
+        try {
+            FileOutputStream out = new FileOutputStream(fileName);
+            ObjectOutputStream oos = new ObjectOutputStream(out);
+            oos.writeObject(auction);
+            oos.close();
+            System.out.println("Save server state to file succeed: " + fileName);
+        } catch (FileNotFoundException e) {
+            System.err.println("Unable to find file " + e);
+        } catch (IOException e) {
+            System.err.println("Unable to write to file " + e);
+        }
+    }
+
+    public Timer getTimer() {
+        return timer;
+    }
+
 
     public static void main(String args[]) {
         AuctionServlet servlet = new AuctionServlet();
         List<Node> nodes = new ArrayList<>();
-        //System.setProperty("java.security.policy", "file:///home/justas/Uni/DAS/Auction/out/production/RMIAuction/server/policyf.txt");
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         BufferedReader brNodesFile = null;
         try {
@@ -61,14 +95,14 @@ public class AuctionServlet {
                 }
             }
 
-            IAuctionServer auction = null;
-            System.out.println("Choose an option");
+            AuctionServer auction = null;
+            System.out.println("Choose from the following options: ");
             System.out.println("n - New server from scratch");
             System.out.println("l - Load server state from file");
             System.out.println("q - Quit");
             boolean loop = true;
             while (loop) {
-                switch (br.readLine()) {
+                switch (br.readLine().toLowerCase()) {
                     case "n":
                         System.out.print("File to save to (default: " + DEFAULT_FILENAME + "): ");
                         fileName = br.readLine();
@@ -85,7 +119,7 @@ public class AuctionServlet {
                         if (fileName.equals("")) {
                             fileName = DEFAULT_FILENAME;
                         }
-                        auction = loadState(fileName);
+                        auction = readStateFromFile(fileName);
                         loop = false;
                         break;
                     case "q":
@@ -99,53 +133,23 @@ public class AuctionServlet {
             Registry reg = LocateRegistry.getRegistry(host, port);
             reg.rebind("auction", auction);
             servlet.getTimer().schedule(servlet.new SaveTask(auction, fileName), SAVE_DELAY);
-            System.out.println("Server ready. Saving every "+ (float)SAVE_DELAY / 1000 / 60 +"mins to " + fileName);
-            System.out.println("Press s to trigger save or q to quit");
+            System.out.println("Server ready. Saving server state every "+ (float)SAVE_DELAY / 1000 / 60 +"mins to " + fileName);
+            System.out.println("Press s to trigger Save Server State or q to Quit");
             while (true) {
-                String inp = br.readLine();
+                String inp = br.readLine().toLowerCase();
                 if (inp.equals("s")) {
-                    saveState(auction, fileName);
+                    writeStateToFile(auction, fileName);
                 } else if (inp.equals("q")) {
                     System.exit(0);
                 }
             }
         }
         catch (Exception e) {
-            System.out.println("Server Error: " + e);
+            System.err.println("Server Error: " + e);
         }
     }
 
-    public static IAuctionServer loadState(String filename) {
-        Object o = null;
-        try {
-            ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename));
-            o = in.readObject();
-        } catch (IOException e) {
-            System.err.println("Could not load file - " + e);
-        } catch (ClassNotFoundException e) {
-            System.err.println("Could not find class - " + e);
-        }
-        if (o instanceof AuctionServerImpl) {
-            ((AuctionServerImpl)o).reloadTimer();
-        }
-        return (IAuctionServer)o;
-    }
 
-    public static void saveState(IAuctionServer auction, String fileName) {
-        try {
-            FileOutputStream out = new FileOutputStream(fileName);
-            ObjectOutputStream oos = new ObjectOutputStream(out);
-            oos.writeObject(auction);
-            oos.close();
-            System.out.println("Successfully saved server state to " + fileName);
-        } catch (FileNotFoundException e) {
-            System.err.println("Unable to find file " + e);
-        } catch (IOException e) {
-            System.err.println("Unable to write to file " + e);
-        }
-    }
 
-    public Timer getTimer() {
-        return timer;
-    }
+
 }

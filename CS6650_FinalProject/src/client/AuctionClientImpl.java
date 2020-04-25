@@ -3,17 +3,19 @@ package client;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 
-public class AuctionClientImpl extends UnicastRemoteObject implements IAuctionClient {
+public class AuctionClientImpl extends UnicastRemoteObject implements AuctionClient {
     private static final long serialVersionUID = 1L;
     private String name;
 
-    public AuctionClientImpl() throws RemoteException {
-        super();
-        this.name = "Name not set";
-    }
+
     public AuctionClientImpl(String name) throws RemoteException {
         super();
         this.name = name;
+    }
+
+    @Override
+    public void callback(String message) throws RemoteException {
+        System.out.println(message);
     }
 
     public String getName() throws RemoteException {
@@ -24,10 +26,6 @@ public class AuctionClientImpl extends UnicastRemoteObject implements IAuctionCl
         this.name = name;
     }
 
-    @Override
-    public void callback(String message) throws RemoteException {
-        System.out.println(message);
-    }
 
     @Override
     public String toString() {
