@@ -12,7 +12,7 @@ public class RunSimulation {
     private static long INTERVAL = 5;
     public static void main(String args[]) {
         String host = "localhost";
-        int port = 1099;
+        int port = 3000;
 
         if (args.length == 1) {
             port = Integer.parseInt(args[0]);

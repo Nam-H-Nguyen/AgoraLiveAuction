@@ -9,7 +9,7 @@ public class ClientServlet {
 
     public static void main(String[] args) {
         String host = "localhost";
-        int port = 1099;
+        int port = 3000;
 
         if (args.length == 1) {
             port = Integer.parseInt(args[0]);
@@ -31,7 +31,6 @@ public class ClientServlet {
             System.out.println("n - New listing");
             System.out.println("b - Bid");
             System.out.println("h - History");
-            System.out.println("t - Check server load (average turnaround in ms)");
             System.out.println("q - Quit");
 
             boolean end = false;
@@ -69,9 +68,6 @@ public class ClientServlet {
                             break;
                         case "h":
                             responseMsg = conn.getServer().getClosedAuctions();
-                            break;
-                        case "t":
-                            responseMsg = "Average turnaround - " + conn.getFailureDetector().determineLoad() + "ms";
                             break;
                         case "q":
                             end = true;
