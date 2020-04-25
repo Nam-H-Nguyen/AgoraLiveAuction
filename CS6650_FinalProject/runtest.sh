@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 <<<<<<< HEAD
 #!/usr/bin/env bash
 find ./src -name "*.java" | xargs javac
