@@ -48,11 +48,11 @@ public class ConnectLayer {
                 // Flag used by the servlet
                 setConnected(true);
             } catch (MalformedURLException e) {
-                System.err.println("Malformed URL: " + e);
+                System.err.println("Unknown URL: " + e);
             } catch (NotBoundException e) {
-                System.err.println("Unable to bind the server - " + e);
+                System.err.println("Bind the server fail: " + e);
             } catch (RemoteException e) {
-                System.err.println("Unable to contact the server - " + e);
+                System.err.println("Connect to server fail: " + e);
             }
         }
     }

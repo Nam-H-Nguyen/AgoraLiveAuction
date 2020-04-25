@@ -24,14 +24,14 @@ public class ClientServlet {
         try {
             ConnectLayer conn = new ConnectLayer(connStr);
             
-            System.out.println("What is your name? ");
+            System.out.println("Your name? ");
             AuctionClientImpl client = new AuctionClientImpl(br.readLine());
-            System.out.println("Choose from the following option: ");
-            System.out.println("l - List auction items");
-            System.out.println("n - New listing");
-            System.out.println("b - Bid");
-            System.out.println("h - History");
-            System.out.println("q - Quit");
+            System.out.println("Type one of the following letters to choose: ");
+            System.out.println("To get all the auction items, type l");
+            System.out.println("To list new auction items, type n");
+            System.out.println("To make a bid, type b");
+            System.out.println("To see history, type h");
+            System.out.println("to quit, type q");
 
             boolean end = false;
             while (!end) {
@@ -46,13 +46,13 @@ public class ClientServlet {
                                 System.out.println("Item name: ");
                                 String name = br.readLine();
                                 if (name.equals("")) throw new NumberFormatException();
-                                System.out.println("Starting price: ");
+                                System.out.println("Price starts at: ");
                                 float startPrice = Float.valueOf(br.readLine());
-                                System.out.println("End auction in ? seconds: ");
+                                System.out.println("Duration of auction: ");
                                 long endTime = Long.valueOf(br.readLine());
                                 responseMsg = conn.getServer().createAuctionItem(client, name, startPrice, endTime);
                             } catch (NumberFormatException nfe) {
-                                System.err.println("Incorrect input format. Please try again.");
+                                System.err.println("Unknown input format. Please retry.");
                             }
                             break;
                         case "b":
@@ -63,7 +63,7 @@ public class ClientServlet {
                                 float bidAmount = Float.valueOf(br.readLine());
                                 responseMsg = conn.getServer().bid(client, auctionItemId, bidAmount);
                             } catch (NumberFormatException nfe) {
-                                System.err.println("Incorrect input format. Please try again.");
+                                System.err.println("Unknown input format. Please try again.");
                             }
                             break;
                         case "h":
@@ -82,7 +82,7 @@ public class ClientServlet {
             }
             System.exit(0);
         } catch (IOException e) {
-            System.err.println("Unable to parse your input " + e);
+            System.err.println("Unknown input" + e);
             System.exit(2);
         }
     }

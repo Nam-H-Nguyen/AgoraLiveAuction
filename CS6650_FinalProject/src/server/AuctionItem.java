@@ -19,12 +19,12 @@ public class AuctionItem implements Serializable {
     private Set<AuctionClient> bidOservers;
     private String name;
     private final float minBid;
-    private final Date startDate, closingDate;
+    private final Date startDate, endDate;
 
     public AuctionItem(AuctionClient owner, String name, float minBid, long endTime) {
         this.owner = owner;
         this.startDate = new Date(System.currentTimeMillis());
-        this.closingDate = new Date(System.currentTimeMillis() + 1000 * endTime);
+        this.endDate = new Date(System.currentTimeMillis() + 1000 * endTime);
         synchronized(this) {
             this.itemID = itemIDCounter;
             itemIDCounter += 1;
@@ -43,7 +43,7 @@ public class AuctionItem implements Serializable {
      */
     public synchronized String makeBid(Bid b) {
         Bid currentBid = getCurrentBid();
-        if (closingDate.getTime() - startDate.getTime() < 0) {
+        if (endDate.getTime() - startDate.getTime() < 0) {
             return ErrorCodes.AUCTION_CLOSED.MESSAGE;
         } else if (b.getAmount() <= minBid) {
             return ErrorCodes.LOW_BID.MESSAGE;
@@ -123,11 +123,11 @@ public class AuctionItem implements Serializable {
     public Date getStartDate() { return startDate; }
 
 
-    public Date getClosingDate() { return closingDate; }
+    public Date getEndDate() { return endDate; }
 
 
     public long getClosingTime() {
-        return this.closingDate.getTime();
+        return this.endDate.getTime();
     }
 
 
@@ -142,34 +142,27 @@ public class AuctionItem implements Serializable {
             Bid currentBid = getCurrentBid();
             SimpleDateFormat dF = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
 
-            long timeDiff = closingDate.getTime() - System.currentTimeMillis();
-            boolean hasEnded = timeDiff <= 0;
+            long timeDiff = endDate.getTime() - System.currentTimeMillis();
+            boolean auctionHasEnded = timeDiff <= 0;
             String timeLeftStr = "";
-            int minutes = 60 * 1000;
-            if (!hasEnded) {
-                if (timeDiff < minutes) {
-                    timeLeftStr = String.valueOf(timeDiff / 1000) + "s";
-                } else if (timeDiff >= minutes && timeDiff < 60 * minutes) {
-                    timeLeftStr = String.valueOf(timeDiff / 1000 / 60) + "min " + (timeDiff / 1000) % 60 + "s";
-                } else if (timeDiff >= 60 * minutes) {
-                    timeLeftStr = String.valueOf(timeDiff / 1000 / 60 / 60) + "h " + (timeDiff / 1000 / 60) % 60 + "min";
-                }
+            if (!auctionHasEnded) {
+                timeLeftStr = (timeDiff / 1000) + "s";
             }
-            StringBuilder result = new StringBuilder("Auction Item # ");
-            result.append(itemID).append(": ").append(name).append("\n");
-            result.append("Minimum bid: ").append(minBid).append("\n");
-            if (hasEnded && getCurrentBid() != null) {
-                result.append("Winning bid: ").append(currentBid)
-                        .append(" by ").append(currentBid.getOwnerName()).append("\n");
+            StringBuilder sb = new StringBuilder("Auction Item # ");
+            sb.append(itemID).append(": ").append(name).append("\n");
+            sb.append("Starting price: ").append(minBid).append("\n");
+            sb.append("Start date: ").append(dF.format(startDate)).append("\n");
+            sb.append("End date: ").append(dF.format(endDate)).append("\n");
+            if (auctionHasEnded && getCurrentBid() != null) {
+                sb.append("Winning bid amount: ").append(currentBid).append("\n");
             } else {
-                result.append("Current bid: ").append(currentBid == null ? "none" : currentBid).append("\n");
+                sb.append("Current bid amount: ").append(currentBid == null ? "none" : currentBid).append("\n");
             }
-            result.append("Start date: ").append(dF.format(startDate)).append("\n");
-            result.append("End date: ").append(dF.format(closingDate)).append("\n");
-            if (!hasEnded) {
-                result.append("Time left: ").append(timeLeftStr);
+
+            if (!auctionHasEnded) {
+                sb.append("Time left: ").append(timeLeftStr);
             }
-            return result.append("\n").toString();
+            return sb.append("\n").toString();
         }
     }
 

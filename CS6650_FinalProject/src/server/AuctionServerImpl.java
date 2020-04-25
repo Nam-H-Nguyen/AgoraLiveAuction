@@ -51,8 +51,9 @@ public class AuctionServerImpl extends UnicastRemoteObject implements AuctionSer
                     // Notify observers
                     StringBuilder m = new StringBuilder("Auction for item " + expiredAuction.getName() + " has ended. ");
                     if (expiredAuction.getCurrentBid() != null) {
-                        m.append("Winning bid - ").append(expiredAuction.getCurrentBid().getAmount());
-                        m.append(" by ").append(expiredAuction.getCurrentBid().getOwnerName());
+                        m.append("Winning bid:").append(expiredAuction.getCurrentBid().getAmount());
+                        m.append("\n");
+                        m.append(" Winning bidder:  ").append(expiredAuction.getCurrentBid().getOwnerName());
                     } else {
                         m.append("No winner!");
                     }
@@ -61,7 +62,6 @@ public class AuctionServerImpl extends UnicastRemoteObject implements AuctionSer
                 } else {
                     // Remove the closed auction permanently after cleanup period
                     closedAuctionItems.remove(id);
-                    LOGGER.info("Removed auction ID #" + id);
                 }
                 // Remove this task from map
                 timerTasks.remove(this);
@@ -106,7 +106,7 @@ public class AuctionServerImpl extends UnicastRemoteObject implements AuctionSer
     @Override
     public String createAuctionItem(AuctionClient owner, String name, float minVal, long closingTime) throws RemoteException {
         if (owner == null) return ErrorCodes.OWNER_EMPTY.MESSAGE;
-        LOGGER.info("Client " + owner.getName() + " is trying to create an auction item");
+        LOGGER.info("Client " + owner.getName() + " lists a new auction item");
         if (name == null) return ErrorCodes.NAME_NULL.MESSAGE;
         if (name.length() == 0) return ErrorCodes.NAME_EMPTY.MESSAGE;
         if (minVal < 0) return ErrorCodes.NEGATIVE_MINVAL.MESSAGE;
@@ -119,7 +119,7 @@ public class AuctionServerImpl extends UnicastRemoteObject implements AuctionSer
         timer.schedule(t, closingTime * 1000);
         timerTasks.put(t, closingTime * 1000);
 
-        LOGGER.info("Auction ID #" + item.getItemID() + " - " + item.getName() + " created");
+        LOGGER.info("Auction ID No:" + item.getItemID() + " - " + item.getName() + " created");
         return ErrorCodes.ITEM_CREATED.MESSAGE;
     }
 
@@ -128,7 +128,7 @@ public class AuctionServerImpl extends UnicastRemoteObject implements AuctionSer
         if (owner == null) return ErrorCodes.OWNER_EMPTY.MESSAGE;
         // Get owner name so we don't have to query multiple times and risk a RemoteException
         String ownerName = owner.getName();
-        LOGGER.info("Client " + ownerName + " is trying to bid on item ID #" + auctionItemId);
+        LOGGER.info("Client " + ownerName + " is bidding on item ID No:" + auctionItemId);
         // Validate item exists and doesn't belong to the bidder
         AuctionItem item = auctionItems.get(auctionItemId);
         if (item == null) return ErrorCodes.AUCTION_DOES_NOT_EXIST.MESSAGE;
@@ -137,15 +137,15 @@ public class AuctionServerImpl extends UnicastRemoteObject implements AuctionSer
         Bid b = new Bid(owner, ownerName, amount);
         String result = item.makeBid(b);
 
-        LOGGER.info(result + " - " + owner.getName() + ", item ID #" + auctionItemId);
+        LOGGER.info(result + ":"  + owner.getName() + ", item ID No" + auctionItemId);
         return result;
     }
 
     @Override
     public String getOpenAuctions() throws RemoteException {
-        if (auctionItems.size() == 0) return "No available auctions";
+        if (auctionItems.size() == 0) return "Ops! No Open Auctions";
         StringBuilder result = new StringBuilder();
-        String separator = "-----------------------\n";
+        String separator = "============ List of Open Auctions ============\n";
         for (AuctionItem item : auctionItems.values()) {
             result.append(item.toString());
             result.append(separator);
@@ -160,9 +160,9 @@ public class AuctionServerImpl extends UnicastRemoteObject implements AuctionSer
 
     @Override
     public String getClosedAuctions() throws RemoteException {
-        if (closedAuctionItems.size() == 0) return "No historical auctions";
+        if (closedAuctionItems.size() == 0) return "Ops! No Closed Auctions";
         StringBuilder result = new StringBuilder();
-        String separator = "-----------------------\n";
+        String separator = "============ List of Closed Auctions ============\n";
         for (AuctionItem item : closedAuctionItems.values()) {
             result.append(item.toString());
             result.append(separator);

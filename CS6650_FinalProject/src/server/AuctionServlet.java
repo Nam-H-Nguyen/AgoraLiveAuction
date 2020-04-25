@@ -34,7 +34,7 @@ public class AuctionServlet {
             ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename));
             o = in.readObject();
         } catch (IOException e) {
-            System.err.println("Unable to load file: " + e);
+            System.err.println("load file fail: " + e);
         } catch (ClassNotFoundException e) {
             System.err.println("Class not found: " + e);
         }
@@ -52,9 +52,9 @@ public class AuctionServlet {
             oos.close();
             System.out.println("Save server state to file succeed: " + fileName);
         } catch (FileNotFoundException e) {
-            System.err.println("Unable to find file " + e);
+            System.err.println("File not found: " + e);
         } catch (IOException e) {
-            System.err.println("Unable to write to file " + e);
+            System.err.println("write to file fail: " + e);
         }
     }
 
@@ -96,10 +96,10 @@ public class AuctionServlet {
             }
 
             AuctionServer auction = null;
-            System.out.println("Choose from the following options: ");
-            System.out.println("n - New server from scratch");
-            System.out.println("l - Load server state from file");
-            System.out.println("q - Quit");
+            System.out.println("Type the following words to select: ");
+            System.out.println("To init new server, type 'n' ");
+            System.out.println("To read server state from file, type 'r' ");
+            System.out.println("To quit, type 'q' ");
             boolean loop = true;
             while (loop) {
                 switch (br.readLine().toLowerCase()) {
@@ -113,7 +113,7 @@ public class AuctionServlet {
                         ((AuctionServerImpl)auction).addNodes(nodes);
                         loop = false;
                         break;
-                    case "l":
+                    case "r":
                         System.out.print("File to load from (default: " + DEFAULT_FILENAME + "): ");
                         fileName = br.readLine();
                         if (fileName.equals("")) {
@@ -133,8 +133,8 @@ public class AuctionServlet {
             Registry reg = LocateRegistry.getRegistry(host, port);
             reg.rebind("auction", auction);
             servlet.getTimer().schedule(servlet.new SaveTask(auction, fileName), SAVE_DELAY);
-            System.out.println("Server ready. Saving server state every "+ (float)SAVE_DELAY / 1000 / 60 +"mins to " + fileName);
-            System.out.println("Press s to trigger Save Server State or q to Quit");
+            System.out.println("Server is ready. Interval to save server state: "+ (float)SAVE_DELAY / 1000 / 60 +"mins");
+            System.out.println("Press s to Save Server State or q to Quit");
             while (true) {
                 String inp = br.readLine().toLowerCase();
                 if (inp.equals("s")) {
@@ -145,7 +145,7 @@ public class AuctionServlet {
             }
         }
         catch (Exception e) {
-            System.err.println("Server Error: " + e);
+            System.err.println("Error: " + e);
         }
     }
 
