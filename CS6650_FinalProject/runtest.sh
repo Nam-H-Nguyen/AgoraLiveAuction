@@ -1,2 +1,2 @@
 find ./src -name "*.java" | xargs javac
-java -cp ./src test.RunSimulation
+java -cp ./src test.RunSimulation $1
